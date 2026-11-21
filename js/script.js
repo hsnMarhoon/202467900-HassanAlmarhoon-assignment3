@@ -109,6 +109,30 @@ function setupRepoControls() {
     document.getElementById('repo-sort').addEventListener('change', renderRepos);
 }
 
+// Cache repos for the browser session to avoid repeat API calls
+const CACHE_KEY = 'github-repos';
+const CACHE_MINUTES = 10;
+
+function getCachedRepos() {
+    try {
+        const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY));
+        if (cached && Date.now() - cached.time < CACHE_MINUTES * 60 * 1000) {
+            return cached.data;
+        }
+    } catch (err) {
+        console.warn('Cache unavailable:', err);
+    }
+    return null;
+}
+
+function cacheRepos(data) {
+    try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ time: Date.now(), data }));
+    } catch (err) {
+        console.warn('Could not cache repos:', err);
+    }
+}
+
 /**
  * Fetch repos from GitHub and render them
  */
@@ -120,19 +144,24 @@ async function loadRepos() {
     showRepoStatus('Loading repositories...');
 
     try {
-        const response = await fetch(REPOS_URL);
+        let repos = getCachedRepos();
 
-        if (response.status === 403) {
-            throw new Error('GitHub rate limit reached. Please try again later.');
-        }
-        if (response.status === 404) {
-            throw new Error('GitHub user not found.');
-        }
-        if (!response.ok) {
-            throw new Error(`Request failed (${response.status}).`);
-        }
+        if (!repos) {
+            const response = await fetch(REPOS_URL);
 
-        const repos = await response.json();
+            if (response.status === 403) {
+                throw new Error('GitHub rate limit reached. Please try again later.');
+            }
+            if (response.status === 404) {
+                throw new Error('GitHub user not found.');
+            }
+            if (!response.ok) {
+                throw new Error(`Request failed (${response.status}).`);
+            }
+
+            repos = await response.json();
+            cacheRepos(repos);   // only successful responses are cached
+        }
         const own = repos.filter(repo => !repo.fork); // hide forks
 
         if (own.length === 0) {
@@ -168,7 +197,7 @@ function getSavedTheme() {
     try {
         return localStorage.getItem(THEME_KEY);
     } catch (err) {
-        alert('localStorage unavailable:', err);
+        console.warn('localStorage unavailable:', err);
         return null;
     }
 }
@@ -177,7 +206,7 @@ function saveTheme(theme) {
     try {
         localStorage.setItem(THEME_KEY, theme);
     } catch (err) {
-        alert('Could not save theme preference:', err);
+        console.warn('Could not save theme preference:', err);
     }
 }
 
@@ -305,7 +334,5 @@ document.addEventListener('DOMContentLoaded', function() {
     setupRepoControls();
     loadRepos();
     setupSmoothScroll();
-    setupContactForm();
-    
-    console.log('Portfolio initialized successfully!');
+    setupContactForm();    
 });

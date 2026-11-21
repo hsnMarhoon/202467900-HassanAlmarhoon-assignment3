@@ -12,6 +12,22 @@ GLOBAL STYLES & ROOT
     --bg-light: #f9f9f9;
     --border-light: #e0e0e0;
     --white: #ffffff;
+    
+}
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    line-height: 1.5;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
 }
 
 body {
