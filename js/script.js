@@ -1,3 +1,97 @@
+
+// ============================================
+// GITHUB API INTEGRATION
+// ============================================
+
+const GITHUB_USER = 'hsnMarhoon';
+const REPOS_URL = `https://api.github.com/users/${GITHUB_USER}/repos?sort=updated&per_page=30`;
+
+/**
+ * Show a message (loading / error) in the status area.
+ * withRetry adds a "Try again" button.
+ */
+function showRepoStatus(message, withRetry = false) {
+    const status = document.getElementById('repo-status');
+    status.textContent = message;
+
+    if (withRetry) {
+        const btn = document.createElement('button');
+        btn.textContent = 'Try again';
+        btn.className = 'retry-btn';
+        btn.addEventListener('click', loadRepos);
+        status.append(' ', btn);
+    }
+}
+
+/**
+ * Build one repo card using textContent (safe against injected HTML)
+ */
+function createRepoCard(repo) {
+    const card = document.createElement('article');
+    card.className = 'repo-card';
+
+    const title = document.createElement('h3');
+    const link = document.createElement('a');
+    link.href = repo.html_url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.textContent = repo.name;
+    title.appendChild(link);
+
+    const desc = document.createElement('p');
+    desc.textContent = repo.description || 'No description provided.';
+
+    const meta = document.createElement('p');
+    meta.className = 'repo-meta';
+    const updated = new Date(repo.updated_at).toLocaleDateString();
+    meta.textContent = `${repo.language || 'N/A'} · ★ ${repo.stargazers_count} · Updated ${updated}`;
+
+    card.append(title, desc, meta);
+    return card;
+}
+
+/**
+ * Fetch repos from GitHub and render them
+ */
+async function loadRepos() {
+    const list = document.getElementById('repo-list');
+    if (!list) return;
+
+    list.innerHTML = '';
+    showRepoStatus('Loading repositories...');
+
+    try {
+        const response = await fetch(REPOS_URL);
+
+        if (response.status === 403) {
+            throw new Error('GitHub rate limit reached. Please try again later.');
+        }
+        if (response.status === 404) {
+            throw new Error('GitHub user not found.');
+        }
+        if (!response.ok) {
+            throw new Error(`Request failed (${response.status}).`);
+        }
+
+        const repos = await response.json();
+        const own = repos.filter(repo => !repo.fork); // hide forks
+
+        if (own.length === 0) {
+            showRepoStatus('No public repositories to show yet.');
+            return;
+        }
+
+        showRepoStatus('');
+        own.forEach(repo => list.appendChild(createRepoCard(repo)));
+    } catch (err) {
+        // Network failures throw a TypeError, so give those a friendly message too
+        const msg = err instanceof TypeError
+            ? 'Could not reach GitHub. Check your internet connection.'
+            : err.message;
+        showRepoStatus(`⚠️ ${msg}`, true);
+    }
+}
+
 // ============================================
 // THEME TOGGLE FUNCTIONALITY
 // ============================================
@@ -140,11 +234,13 @@ function setupContactForm() {
     });
 }
 
+
 /**
  * Initialize all features on page load
  */
 document.addEventListener('DOMContentLoaded', function() {
     loadTheme();
+    loadRepos();
     setupSmoothScroll();
     setupContactForm();
     
