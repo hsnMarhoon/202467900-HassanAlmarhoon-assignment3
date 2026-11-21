@@ -663,3 +663,43 @@ body.dark-mode .repo-card {
     background: #2a2a3c;   /* adjust to match your dark card color */
     border-color: #444;
 }
+
+.repo-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 25px;
+}
+
+.repo-controls label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.repo-controls select {
+    padding: 8px 12px;
+    border: 2px solid var(--border-light);
+    border-radius: 8px;
+    background: var(--white);
+    color: var(--text-dark);
+    font-size: 1rem;
+}
+
+.repo-controls select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+#repo-count {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+body.dark-mode .repo-controls select {
+    background: #2a2a3c;   /* match your dark input color */
+    color: #eee;
+    border-color: #444;
+}

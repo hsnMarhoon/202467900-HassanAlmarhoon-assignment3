@@ -93,6 +93,25 @@
             <div class="container">
                 <h1>My GitHub Repositories</h1>
                 <p class="section-intro">Pulled live from my GitHub account.</p>
+                <div class="repo-controls" id="repo-controls" hidden>
+                    <label for="repo-filter">Language
+                        <select id="repo-filter">
+                            <option value="all">All</option>
+                        </select>
+                    </label>
+
+                    <label for="repo-sort">Sort by
+                        <select id="repo-sort">
+                            <option value="updated-desc">Newest updated</option>
+                            <option value="updated-asc">Oldest updated</option>
+                            <option value="name-asc">Name (A–Z)</option>
+                            <option value="name-desc">Name (Z–A)</option>
+                            <option value="stars-desc">Most stars</option>
+                        </select>
+                    </label>
+
+                    <span id="repo-count" aria-live="polite"></span>
+                </div>
                 <div id="repo-status" role="status" aria-live="polite"></div>
                 <div id="repo-list" class="repo-grid"></div>
             </div>

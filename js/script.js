@@ -50,6 +50,65 @@ function createRepoCard(repo) {
     return card;
 }
 
+// Holds the repos fetched from the API so we can re-render without re-fetching
+let allRepos = [];
+
+/**
+ * Sort functions keyed by the dropdown values
+ */
+const SORTERS = {
+    'updated-desc': (a, b) => new Date(b.updated_at) - new Date(a.updated_at),
+    'updated-asc':  (a, b) => new Date(a.updated_at) - new Date(b.updated_at),
+    'name-asc':     (a, b) => a.name.localeCompare(b.name),
+    'name-desc':    (a, b) => b.name.localeCompare(a.name),
+    'stars-desc':   (a, b) => b.stargazers_count - a.stargazers_count
+};
+
+/**
+ * Fill the language dropdown with the languages that actually exist in the data
+ */
+function populateLanguageFilter(repos) {
+    const select = document.getElementById('repo-filter');
+    const languages = [...new Set(repos.map(r => r.language).filter(Boolean))].sort();
+
+    select.length = 1; // keep only the "All" option
+    languages.forEach(lang => {
+        const option = document.createElement('option');
+        option.value = lang;
+        option.textContent = lang;
+        select.appendChild(option);
+    });
+}
+
+/**
+ * Step 1: filter by language. Step 2: sort the result. Step 3: render.
+ */
+function renderRepos() {
+    const list = document.getElementById('repo-list');
+    const count = document.getElementById('repo-count');
+    const language = document.getElementById('repo-filter').value;
+    const sortKey = document.getElementById('repo-sort').value;
+
+    const visible = allRepos
+        .filter(repo => language === 'all' || repo.language === language)
+        .sort(SORTERS[sortKey]);
+
+    list.innerHTML = '';
+    visible.forEach(repo => list.appendChild(createRepoCard(repo)));
+    count.textContent = `Showing ${visible.length} of ${allRepos.length}`;
+
+    // Edge case: a filter that matches nothing
+    showRepoStatus(visible.length === 0 ? 'No repositories match this filter.' : '');
+}
+
+/**
+ * Re-render whenever the visitor changes either dropdown
+ */
+function setupRepoControls() {
+    document.getElementById('repo-filter').addEventListener('change', renderRepos);
+    document.getElementById('repo-sort').addEventListener('change', renderRepos);
+}
+
 /**
  * Fetch repos from GitHub and render them
  */
@@ -81,9 +140,12 @@ async function loadRepos() {
             return;
         }
 
-        showRepoStatus('');
-        own.forEach(repo => list.appendChild(createRepoCard(repo)));
+        allRepos = own;
+        populateLanguageFilter(allRepos);
+        document.getElementById('repo-controls').hidden = false;
+        renderRepos();
     } catch (err) {
+                document.getElementById('repo-controls').hidden = true;
         // Network failures throw a TypeError, so give those a friendly message too
         const msg = err instanceof TypeError
             ? 'Could not reach GitHub. Check your internet connection.'
@@ -240,6 +302,7 @@ function setupContactForm() {
  */
 document.addEventListener('DOMContentLoaded', function() {
     loadTheme();
+    setupRepoControls();
     loadRepos();
     setupSmoothScroll();
     setupContactForm();
